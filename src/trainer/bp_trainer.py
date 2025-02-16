@@ -58,51 +58,57 @@ class Trainer:
         self.optimizer = optimizer
         self.device = device
 
-    def train(self):
+    def train(self, disable_epoch_progress: bool = False):
         num_batches = len(self.train_loader)
         history = []
 
-        for epoch in create_progress_bar()(
+        with create_progress_bar()(
             range(self.num_epochs), desc="Overall progress"
-        ):
-            self.model.train()
+        ) as pb:
+            for epoch in range(self.num_epochs):
+                self.model.train()
 
-            with create_progress_bar()(range(num_batches)) as pb:
-                pb.set_description("Epoch [%s]" % (epoch + 1))
+                with create_progress_bar()(
+                    range(self.num_epochs), disable=disable_epoch_progress
+                ) as epoch_pb:
+                    epoch_pb.set_description("Epoch [%s]" % (epoch + 1))
 
-                train_total_loss = 0
+                    train_total_loss = 0
 
-                for x, y_true in self.train_loader:
-                    x = x.to(self.device)
-                    y_true = y_true.to(self.device)
+                    for x, y_true in self.train_loader:
+                        x = x.to(self.device)
+                        y_true = y_true.to(self.device)
 
-                    outputs = self.model(x)
+                        outputs = self.model(x)
 
-                    loss = self.loss_fun(outputs, y_true)
+                        loss = self.loss_fun(outputs, y_true)
 
-                    train_total_loss += loss.item()
+                        train_total_loss += loss.item()
 
-                    self.optimizer.zero_grad()
-                    loss.backward()
+                        self.optimizer.zero_grad()
+                        loss.backward()
 
-                    self.optimizer.step()
+                        self.optimizer.step()
 
-                    pb.update()
-                    pb.set_postfix(loss=loss.item())
+                        epoch_pb.update()
+                        epoch_pb.set_postfix(loss=loss.item())
 
-                train_metrics = TrainMetrics(train_total_loss / num_batches)
-                eval_metrics = self.evaluate()
+                    train_metrics = TrainMetrics(train_total_loss / num_batches)
+                    eval_metrics = self.evaluate()
 
-                history.append(Metrics(eval_metrics, train_metrics))
+                    history.append(Metrics(eval_metrics, train_metrics))
 
-                progress_postfix = {
-                    "loss": train_metrics.loss,
-                    "eval_loss": eval_metrics.loss,
-                    "eval_accuracy": eval_metrics.accuracy,
-                    "eval_f1": eval_metrics.f1,
-                }
+                    progress_postfix = {
+                        "loss": train_metrics.loss,
+                        "eval_loss": eval_metrics.loss,
+                        "eval_accuracy": eval_metrics.accuracy,
+                        "eval_f1": eval_metrics.f1,
+                    }
 
-                pb.set_postfix(**progress_postfix)
+                    epoch_pb.set_postfix(**progress_postfix)
+                    pb.set_postfix(**progress_postfix)
+
+                pb.update()
 
         return TrainFeedback(history)
 
