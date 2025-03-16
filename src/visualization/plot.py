@@ -24,3 +24,13 @@ def plot_f1_score(feedback: TrainFeedback, size=(12, 6)) -> None:
     plt.ylabel("F-score")
     plt.legend()
     plt.show()
+
+
+def plot_estimators_count_to_f1(x, y, size=(12, 6)):
+    plt.figure(figsize=size)
+    plt.plot(x, y, label="F1-score")
+    plt.title("Estimator count to F1-score")
+    plt.xlabel("Estimator count")
+    plt.ylabel("F-score")
+    plt.legend()
+    plt.show()
